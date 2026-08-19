@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowForge | 간편 프로젝트 관리 서비스</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- 1. 인증 모달 -->
+    <div id="auth-overlay" class="modal-overlay show">
+        <div class="modal-content" style="max-width: 400px;">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div class="brand" style="justify-content: center; margin-bottom: 0.5rem; font-size: 1.75rem;">
+                    <i class="fas fa-layer-group"></i> FlowForge
+                </div>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">AI 기반 프로젝트 관리 플랫폼</p>
+            </div>
+
+            <div id="view-login" class="page-section active">
+                <form id="form-login">
+                    <div class="form-group"><label>아이디</label><input type="text" id="login-id" class="form-control" required></div>
+                    <div class="form-group">
+                        <label>비밀번호</label>
+                        <div class="pw-input-wrapper">
+                            <input type="password" id="login-pw" class="form-control" required style="padding-right: 2.5rem;">
+                            <button type="button" class="pw-toggle-btn" onclick="UI.togglePasswordVisibility('login-pw', this)"><i class="fas fa-eye"></i></button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" id="btn-login" style="width: 100%; justify-content: center; padding: 0.75rem;">로그인</button>
+                </form>
+                <div style="text-align: center; margin-top: 1.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+                    계정이 없으신가요? <a href="#" id="link-to-register" style="color: var(--accent-color); text-decoration: none; font-weight: 500;">회원가입</a>
+                </div>
+            </div>
+
+            <div id="view-register" class="page-section">
+                <form id="form-register">
+                    <div class="form-group"><label>아이디 (4자 이상)</label><input type="text" id="reg-id" class="form-control" required></div>
+                    <div class="form-group"><label>닉네임</label><input type="text" id="reg-nickname" class="form-control" required></div>
+                    <div class="form-group">
+                        <label>비밀번호 (6자 이상)</label>
+                        <div class="pw-input-wrapper">
+                            <input type="password" id="reg-pw" class="form-control" required style="padding-right: 2.5rem;">
+                            <button type="button" class="pw-toggle-btn" onclick="UI.togglePasswordVisibility('reg-pw', this)"><i class="fas fa-eye"></i></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>비밀번호 확인</label>
+                        <div class="pw-input-wrapper">
+                            <input type="password" id="reg-pw-confirm" class="form-control" required style="padding-right: 2.5rem;">
+                            <button type="button" class="pw-toggle-btn" onclick="UI.togglePasswordVisibility('reg-pw-confirm', this)"><i class="fas fa-eye"></i></button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" id="btn-register" style="width: 100%; justify-content: center; padding: 0.75rem;">계정 생성</button>
+                </form>
+                <div style="text-align: center; margin-top: 1.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+                    이미 계정이 있으신가요? <a href="#" id="link-to-login" style="color: var(--accent-color); text-decoration: none; font-weight: 500;">로그인</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 공통 Confirm 모달 -->
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--warning-color); margin-bottom: 1.5rem;"></i>
+            <h3 id="confirm-title" style="margin-bottom: 0.75rem; font-size: 1.25rem;">확인</h3>
+            <p id="confirm-msg" style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.5;">진행하시겠습니까?</p>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button class="btn-secondary" id="btn-confirm-cancel" style="min-width: 100px;">취소</button>
+                <button class="btn-primary" id="btn-confirm-ok" style="background-color: var(--danger-color); min-width: 100px;">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 프로젝트 생성/수정 공통 모달 -->
+    <div id="project-modal" class="modal-overlay" onclick="UI.handleOutsideClick(event, 'project-modal')">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="project-modal-title">새 프로젝트 생성</h3>
+                <button class="modal-close" onclick="UI.closeModal('project-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="form-project" data-mode="create" data-id="">
+                <div class="form-group">
+                    <label>프로젝트 이름</label>
+                    <input type="text" id="proj-title" class="form-control" placeholder="예: 프로젝트 관리 웹사이트" required>
+                </div>
+                
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label style="margin: 0;">설명 (선택)</label>
+                        <!--<button type="button" class="btn-secondary" id="btn-ai-desc" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; border-color: var(--accent-color); color: var(--accent-color);">
+                            <i class="fas fa-magic"></i> AI 자동 요약
+                        </button>-->
+                    </div>
+                    <textarea id="proj-desc" class="form-control" rows="3" placeholder="목표와 주요 내용을 적어주세요. AI 버튼을 누르면 제목을 기반으로 자동으로 작성됩니다."></textarea>
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <div class="form-group" style="flex: 1;"><label>상태</label>
+                        <select id="proj-status" class="form-control">
+                            <option value="계획 됨">계획 됨</option>
+                            <option value="진행 중">진행 중</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;"><label>마감 기한</label><input type="date" id="proj-date" class="form-control" required></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="UI.closeModal('project-modal')">취소</button>
+                    <button type="submit" class="btn-primary" id="btn-submit-proj">생성하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. 작업 생성/수정 공통 모달 -->
+    <div id="task-modal" class="modal-overlay" onclick="UI.handleOutsideClick(event, 'task-modal')">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="task-modal-title">새 작업 추가</h3>
+                <button class="modal-close" onclick="UI.closeModal('task-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="form-task" data-mode="create" data-id="">
+                <div class="form-group"><label>작업 내용</label><input type="text" id="task-title" class="form-control" required autocomplete="off"></div>
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label>설명 (선택)</label>
+                    </div>
+                    <textarea id="task-desc" class="form-control" rows="3" placeholder="작업에 대한 메모나 세부 내용을 입력하세요."></textarea>
+                </div>
+                <div class="form-group"><label>소속 프로젝트</label><select id="task-project" class="form-control"><option value="">선택 안함</option></select></div>
+                <div style="display: flex; gap: 1rem;">
+                    <div class="form-group" style="flex: 1;"><label>중요도</label>
+                        <select id="task-priority" class="form-control">
+                            <option value="High">높음 (High)</option>
+                            <option value="Medium" selected>보통 (Medium)</option>
+                            <option value="Low">낮음 (Low)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;"><label>마감일</label><input type="date" id="task-date" class="form-control" required></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="UI.closeModal('task-modal')">취소</button>
+                    <button type="submit" class="btn-primary" id="btn-submit-task">추가</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 5. 프로필 수정 모달 -->
+    <div id="profile-modal" class="modal-overlay" onclick="UI.handleOutsideClick(event,'profile-modal')">
+        <div class="modal-content" style="max-width:420px;">
+            <div class="modal-header">
+                <h3>프로필 수정</h3>
+                <button class="modal-close" onclick="UI.closeModal('profile-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="form-profile">
+                <div class="form-group" style="text-align:center;">
+                    <div class="profile-avatar-editor">
+                        <img id="profile-avatar-preview" src="" style="display:none;">
+                        <span id="profile-avatar-initial">U</span>
+                    </div>
+                    <input type="file" id="profile-avatar-file" accept="image/png,image/jpeg,image/webp" style="display:none;">
+                    <div style="display:flex;justify-content:center;gap:.5rem;margin-top:12px;flex-wrap:wrap;">
+                        <button type="button" class="btn-secondary" id="btn-change-avatar"><i class="fas fa-image"></i> 사진 변경</button>
+                        <button type="button" class="btn-secondary text-danger" id="btn-remove-avatar"><i class="fas fa-trash"></i> 사진 삭제</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>닉네임</label>
+                    <input type="text" id="prof-nickname" class="form-control" maxlength="20" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="UI.closeModal('profile-modal')">취소</button>
+                    <button type="submit" class="btn-primary" id="btn-submit-profile">저장</button>
+                </div>
+            </form>
+            <hr style="margin:1.5rem 0;">
+            <div style="display:flex;flex-direction:column;gap:.75rem;">
+                <button type="button" class="btn-secondary" id="btn-open-password-modal"><i class="fas fa-key"></i> 비밀번호 변경</button>
+                <button type="button" class="btn-secondary text-danger" id="btn-open-delete-modal"><i class="fas fa-user-times"></i> 회원 탈퇴</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. 비밀번호 변경 -->
+    <div id="password-modal" class="modal-overlay" onclick="UI.handleOutsideClick(event,'password-modal')">
+        <div class="modal-content" style="max-width:420px;">
+            <div class="modal-header">
+                <h3>비밀번호 변경</h3>
+                <button class="modal-close" onclick="UI.closeModal('password-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="form-password">
+                <div class="form-group">
+                    <label>현재 비밀번호</label>
+                    <div class="pw-input-wrapper">
+                        <input type="password" id="pw-current" class="form-control" required style="padding-right:2.5rem;">
+                        <button type="button" class="pw-toggle-btn" onclick="UI.togglePasswordVisibility('pw-current',this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>새 비밀번호</label>
+                    <div class="pw-input-wrapper">
+                        <input type="password" id="pw-new" class="form-control" required style="padding-right:2.5rem;">
+                        <button type="button" class="pw-toggle-btn" onclick="UI.togglePasswordVisibility('pw-new',this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>새 비밀번호 확인</label>
+                    <div class="pw-input-wrapper">
+                        <input type="password" id="pw-new-confirm" class="form-control" required style="padding-right:2.5rem;">
+                        <button type="button" class="pw-toggle-btn" onclick="UI.togglePasswordVisibility('pw-new-confirm',this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="UI.closeModal('password-modal')">취소</button>
+                    <button type="submit" class="btn-primary" id="btn-submit-password">변경</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 7. 회원 탈퇴 -->
+    <div id="delete-account-modal" class="modal-overlay" onclick="UI.handleOutsideClick(event,'delete-account-modal')">
+        <div class="modal-content" style="max-width:420px;">
+            <div class="modal-header">
+                <h3>회원 탈퇴</h3>
+                <button class="modal-close" onclick="UI.closeModal('delete-account-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="form-delete-account">
+                <p style="margin-bottom:1rem;color:var(--text-secondary);line-height:1.6;">회원 탈퇴 시 모든 프로젝트와 작업이 영구 삭제됩니다.<br>삭제된 데이터는 복구할 수 없습니다.</p>
+                <div class="form-group">
+                    <label>현재 비밀번호</label>
+                    <div class="pw-input-wrapper">
+                        <input type="password" id="delete-current-password" class="form-control" required style="padding-right:2.5rem;">
+                        <button type="button" class="pw-toggle-btn" onclick="UI.togglePasswordVisibility('delete-current-password',this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="UI.closeModal('delete-account-modal')">취소</button>
+                    <button type="submit" class="btn-primary" id="btn-submit-delete-account" style="background:var(--danger-color);">회원 탈퇴</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 8. 도움말 모달 -->
+    <div id="help-modal" class="modal-overlay" onclick="UI.handleOutsideClick(event, 'help-modal')">
+        <div class="modal-content help-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-circle-question"></i> FlowForge 사용 가이드</h3>
+                <button class="modal-close" onclick="UI.closeModal('help-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="help-body">
+                <!-- PAGE 1 -->
+                <div class="help-page active" data-page="1">
+                    <div class="help-icon"><i class="fas fa-layer-group"></i></div>
+                    <h3>FlowForge가 무엇인가요?</h3>
+                    <p>
+                        FlowForge는 프로젝트와 작업(Task)을 함께 관리하는
+                        프로젝트 관리 서비스입니다.
+                    </p>
+                    <p>
+                        해야 할 일을 프로젝트별로 정리하고,
+                        작업의 진행 상태를 한눈에 확인할 수 있습니다.
+                    </p>
+                </div>
+
+                <!-- PAGE 2 -->
+                <div class="help-page" data-page="2">
+                    <div class="help-icon"><i class="fas fa-folder-open"></i></div>
+                    <h3>프로젝트란?</h3>
+                    <p>프로젝트는 하나의 큰 목표입니다.</p>
+                    <p>예를 들어</p>
+                    <ul class="help-list">
+                        <li>웹사이트 제작</li>
+                        <li>졸업 작품</li>
+                        <li>게임 개발</li>
+                    </ul>
+                    <p>
+                        하나의 프로젝트 안에 여러 개의 작업(Task)을 넣어
+                        관리할 수 있습니다.
+                    </p>
+                </div>
+
+                <!-- PAGE 3 -->
+                <div class="help-page" data-page="3">
+                    <div class="help-icon"><i class="fas fa-tasks"></i></div>
+                    <h3>작업(Task)이란?</h3>
+                    <p>
+                        작업은 프로젝트를 완성하기 위한
+                        세부 업무입니다.
+                    </p>
+                    <div class="help-example">
+                        <strong>예시</strong>
+                        <p>프로젝트 : 홈페이지 제작</p>
+                        <ul class="help-list">
+                            <li>메인 화면 만들기</li>
+                            <li>로그인 기능 개발</li>
+                            <li>DB 연결</li>
+                            <li>디자인 수정</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- PAGE 4 -->
+                <div class="help-page" data-page="4">
+                    <div class="help-icon"><i class="fas fa-diagram-project"></i></div>
+                    <h3>프로젝트와 작업의 관계</h3>
+                    <div class="help-example">
+                        <strong>프로젝트</strong>
+                        <div style="margin-top:10px;">📁 홈페이지 제작</div>
+                        <div style="margin-left:18px; margin-top:10px; line-height:1.9;">
+                            ├ 로그인 기능<br>
+                            ├ 회원가입 기능<br>
+                            ├ 게시판 제작<br>
+                            └ 디자인 수정
+                        </div>
+                    </div>
+                    <p style="margin-top:15px;">
+                        프로젝트는 큰 목표,
+                        작업은 그 목표를 이루기 위한 세부 업무입니다.
+                    </p>
+                </div>
+
+                <!-- PAGE 5 -->
+                <div class="help-page" data-page="5">
+                    <div class="help-icon"><i class="fas fa-columns"></i></div>
+                    <h3>작업 보드 사용법</h3>
+                    <p>작업은 드래그해서 상태를 변경할 수 있습니다.</p>
+                    <div class="help-example">
+                        📝 해야 할 일
+                        <br>↓
+                        <br>⚙ 진행 중
+                        <br>↓
+                        <br>✅ 완료됨
+                    </div>
+                    <p style="margin-top:15px;">
+                        작업을 마우스로 끌어 원하는 칸에 놓으면
+                        자동으로 저장됩니다.
+                    </p>
+                </div>
+
+                <!-- PAGE 6 -->
+                <div class="help-page" data-page="6">
+                    <div class="help-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <h3>통계 리포트</h3>
+                    <p>
+                        프로젝트와 작업의 진행 상황을
+                        자동으로 분석하여 보여줍니다.
+                    </p>
+
+                    <ul class="help-list">
+                        <li>프로젝트 진행률</li>
+                        <li>작업 상태 분포</li>
+                        <li>완료 현황</li>
+                    </ul>
+                </div>
+
+                <!-- PAGE 7 -->
+                <div class="help-page" data-page="7">
+                    <div class="help-icon"><i class="fas fa-user-circle"></i></div>
+                    <h3>프로필 관리</h3>
+                    <p>우측 상단 프로필 메뉴에서</p>
+                    <ul class="help-list">
+                        <li>닉네임 변경</li>
+                        <li>프로필 사진 변경</li>
+                        <li>비밀번호 변경</li>
+                        <li>회원 탈퇴</li>
+                    </ul>
+                    <p>를 수행할 수 있습니다.</p>
+                </div>
+            </div>
+            <div class="help-footer">
+                <button type="button" class="btn-secondary" id="help-prev"> <i class="fas fa-chevron-left"></i>이전</button>
+                <div id="help-indicator" class="help-indicator">
+                    <span class="active"></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <button type="button" class="btn-primary" id="help-next">다음<i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <!-- 앱 뼈대 -->
+    <aside class="sidebar">
+        <div class="brand"><i class="fas fa-layer-group"></i> FlowForge</div>
+        <ul class="nav-menu">
+            <li><a class="nav-item active" onclick="UI.switchPage('dashboard')"><i class="fas fa-home"></i> 대시보드</a></li>
+            <li><a class="nav-item" onclick="UI.switchPage('projects')"><i class="fas fa-folder"></i> 프로젝트</a></li>
+            <li><a class="nav-item" onclick="UI.switchPage('tasks')"><i class="fas fa-tasks"></i> 작업 보드</a></li>
+            <li><a class="nav-item" onclick="UI.switchPage('analytics')"><i class="fas fa-chart-pie"></i> 통계 리포트</a></li>
+        </ul>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="header">
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input type="text" id="global-search" placeholder="프로젝트 및 작업 실시간 검색...">
+            </div>
+            
+            <div class="header-actions">
+                <div style="color: var(--text-muted); font-size: 0.8rem; margin-right: 0.5rem; display: flex; align-items: center; gap: 0.4rem; background: var(--bg-surface); padding: 0.4rem 0.8rem; border-radius: 99px; border: 1px solid var(--border-color);">
+                    <i class="fas fa-cloud text-success" style="color: var(--success-color);"></i> 연동됨
+                </div>
+                <button class="icon-btn" id="btn-theme-toggle" title="테마 변경"><i class="fas fa-moon"></i></button>
+                <button class="icon-btn" id="btn-help" title="도움말"><i class="fas fa-circle-question"></i></button>
+
+                <div class="profile-wrapper">
+                    <button class="profile-btn" id="btn-profile-trigger">
+                        <div class="avatar">
+                            <img id="header-avatar-img" style="display:none;">
+                            <span id="header-avatar-initial">U</span>
+                        </div>
+                        <span class="profile-name" id="header-nickname">로딩중...</span>
+                        <i class="fas fa-chevron-down" style="font-size: 0.75rem; margin-left: 0.25rem; color: var(--text-secondary);"></i>
+                    </button>
+                    <div class="profile-dropdown" id="profile-dropdown">
+                        <div style="padding:1rem; display:flex; align-items:center; gap:0.75rem;">
+                            <div class="avatar">
+                                <img id="dropdown-avatar-img" style="display:none;">
+                                <span id="dropdown-avatar-initial">U</span>
+                            </div>
+
+                            <div>
+                                <p class="profile-name" id="dropdown-nickname">-</p>
+                                <p style="font-size:0.75rem; color:var(--text-muted);" id="dropdown-user-id">@-</p>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item" id="btn-edit-profile"><i class="fas fa-user-edit"></i> 프로필 수정</button>
+                        <button class="dropdown-item text-danger" id="btn-logout"><i class="fas fa-sign-out-alt"></i> 로그아웃</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="page-content">
+            <div id="global-loader" class="loading-overlay"><div class="loader"></div></div>
+
+            <!-- 대시보드 -->
+            <section id="dashboard-page" class="page-section active">
+                <div class="section-header">
+                    <div>
+                        <h2 id="dashboard-greeting">환영합니다!</h2>
+                        <p>진행 중인 업무를 한눈에 파악하세요.</p>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+                    <div style="background: var(--bg-surface); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); transition: transform 0.2s; cursor: default;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500;">총 프로젝트</p>
+                        <h3 id="stat-total" style="font-size: 2.25rem; font-weight: 600;">0</h3>
+                    </div>
+                    <div style="background: var(--bg-surface); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); transition: transform 0.2s; cursor: default;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500;">진행 중</p>
+                        <h3 id="stat-active" style="font-size: 2.25rem; color: var(--info-color); font-weight: 600;">0</h3>
+                    </div>
+                    <div style="background: var(--bg-surface); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); transition: transform 0.2s; cursor: default;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500;">완료된 프로젝트</p>
+                        <h3 id="stat-done" style="font-size: 2.25rem; color: var(--success-color); font-weight: 600;">0</h3>
+                    </div>
+                    <div style="background: var(--bg-surface); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); transition: transform 0.2s; cursor: default;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500;">진행 대기 작업</p>
+                        <h3 id="stat-tasks" style="font-size: 2.25rem; color: var(--warning-color); font-weight: 600;">0</h3>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 1.1rem; margin-bottom: 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-fire" style="color: var(--danger-color);"></i> 마감 임박 작업
+                </h3>
+                <div class="dashboard-list" id="dashboard-recent-tasks"></div>
+            </section>
+
+            <!-- 프로젝트 -->
+            <section id="projects-page" class="page-section">
+                <div class="section-header">
+                    <div><h2>프로젝트 관리</h2><p>클라우드에 안전하게 저장된 내 프로젝트들입니다.</p></div>
+                    <button class="btn-primary" onclick="UI.openProjectModal('create')"><i class="fas fa-plus"></i> 새 프로젝트</button>
+                </div>
+                <div class="project-grid" id="project-container"></div>
+            </section>
+
+            <!-- 작업 보드 -->
+            <section id="tasks-page" class="page-section">
+                <div class="section-header">
+                    <div><h2>작업 보드</h2><p>마우스로 카드를 끌어다 놓아 상태를 변경하세요.</p></div>
+                    <button class="btn-primary" onclick="UI.openTaskModal('create')"><i class="fas fa-plus"></i> 새 작업 추가</button>
+                </div>
+                <div class="kanban-board">
+                    <div class="kanban-column" data-status="To Do">
+                        <div class="kanban-header">
+                            <span style="display: flex; align-items: center; gap: 0.5rem;"><i class="fas fa-list-ul" style="color: var(--info-color);"></i> 해야 할 일</span>
+                            <span class="kanban-count" id="count-todo">0</span>
+                        </div>
+                        <div class="kanban-tasks" id="col-todo"></div>
+                    </div>
+                    <div class="kanban-column" data-status="In Progress">
+                        <div class="kanban-header">
+                            <span style="display: flex; align-items: center; gap: 0.5rem;"><i class="fas fa-spinner" style="color: var(--warning-color);"></i> 진행 중</span>
+                            <span class="kanban-count" id="count-inprogress">0</span>
+                        </div>
+                        <div class="kanban-tasks" id="col-inprogress"></div>
+                    </div>
+                    <div class="kanban-column" data-status="Done">
+                        <div class="kanban-header">
+                            <span style="display: flex; align-items: center; gap: 0.5rem;"><i class="fas fa-check-circle" style="color: var(--success-color);"></i> 완료됨</span>
+                            <span class="kanban-count" id="count-done">0</span>
+                        </div>
+                        <div class="kanban-tasks" id="col-done"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 통계 리포트 -->
+            <section id="analytics-page" class="page-section">
+                <div class="section-header">
+                    <div><h2>통계 리포트</h2><p>내 프로젝트 및 작업의 현황을 시각적으로 확인하세요.</p></div>
+                </div>
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <h3><i class="fas fa-folder-open" style="color: var(--accent-color); margin-right: 0.5rem;"></i> 프로젝트 진행 현황</h3>
+                        <div id="analytics-projects-content"></div>
+                    </div>
+                    <div class="analytics-card">
+                        <h3><i class="fas fa-tasks" style="color: var(--info-color); margin-right: 0.5rem;"></i> 작업(Task) 상태 분포</h3>
+                        <div id="analytics-tasks-content"></div>
+                    </div>
+                </div>
+            </section>
+            <footer style="text-align: center; padding: 2rem 1rem; border-top: 1px solid var(--border-color, #ddd); color: var(--text-secondary, #888); font-size: 0.9rem; margin-top: 2rem;">
+                <div style="margin-bottom: 0.5rem;">&copy; 2026 keonyang1. All rights reserved.</div>
+                <div>제작자: keonyang1</div>
+            </footer>
+        </main>
+    </div>
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/dragdrop.js"></script>
+    <script src="js/auth.js"></script>
+
+    <script src="js/project.js"></script>
+    <script src="js/task.js"></script>
+    <script src="js/analytics.js"></script>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

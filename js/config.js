@@ -5,7 +5,7 @@
 */
 
 const GAS_WEB_APP_URL =
-'https://script.google.com/macros/s/AKfycbwIOdmVnkReZIHDZ4xREsVD3JEl178pBKbvXq74vIlC-VqVp_RsWHMKjqbbwylwavUA/exec';
+'https://script.google.com/macros/s/AKfycbxR98CIUhHr0XAIopYMJtKqNdv-N7w2gPoLvOmCiIgZYJbJzUh-Etpr471XyGa93q3r/exec';
 
 const AUTH = {
     USER_ID_REGEX: /^[a-z0-9_]{4,}$/,

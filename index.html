@@ -298,7 +298,6 @@
                         <li>웹사이트 제작</li>
                         <li>졸업 작품</li>
                         <li>게임 개발</li>
-                        <li>수행평가</li>
                     </ul>
                     <p>
                         하나의 프로젝트 안에 여러 개의 작업(Task)을 넣어
@@ -415,6 +414,7 @@
     <div id="toast-container"></div>
 
     <!-- 앱 뼈대 -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <aside class="sidebar">
         <div class="brand"><i class="fas fa-layer-group"></i> FlowForge</div>
         <ul class="nav-menu">
@@ -427,6 +427,8 @@
 
     <div class="main-wrapper">
         <header class="header">
+            <button class="mobile-menu-btn" id="btn-mobile-menu" type="button" aria-label="메뉴 열기"><i class="fas fa-bars"></i></button>
+            <div class="brand mobile-brand"><i class="fas fa-layer-group"></i> FlowForge</div>
             <div class="search-container">
                 <i class="fas fa-search"></i>
                 <input type="text" id="global-search" placeholder="프로젝트 및 작업 실시간 검색...">
@@ -562,8 +564,8 @@
                 </div>
             </section>
             <footer style="text-align: center; padding: 2rem 1rem; border-top: 1px solid var(--border-color, #ddd); color: var(--text-secondary, #888); font-size: 0.9rem; margin-top: 2rem;">
-                <div style="margin-bottom: 0.5rem;">&copy; 2026 정왕고등학교. All rights reserved.</div>
-                <div>Created by Lee Yehyun</div>
+                <div style="margin-bottom: 0.5rem;">&copy; 2026 keonyang1. All rights reserved.</div>
+                <div>제작자: keonyang1</div>
             </footer>
         </main>
     </div>

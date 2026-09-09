@@ -154,6 +154,24 @@
         </div>
     </div>
 
+    <!-- 4-1. 작업 상세 보기 모달 -->
+    <div id="task-detail-modal" class="modal-overlay" onclick="UI.handleOutsideClick(event, 'task-detail-modal')">
+        <div class="modal-content task-detail-content" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3 id="task-detail-modal-title">작업 상세 정보</h3>
+                <button class="modal-close" onclick="UI.closeModal('task-detail-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="task-detail-body" class="task-detail-body">
+                <!-- 동적으로 렌더링 -->
+            </div>
+            <div class="modal-footer task-detail-footer" id="task-detail-footer">
+                <!-- 동적으로 렌더링 -->
+            </div>
+        </div>
+    </div>
+
     <!-- 5. 프로필 수정 모달 -->
     <div id="profile-modal" class="modal-overlay" onclick="UI.handleOutsideClick(event,'profile-modal')">
         <div class="modal-content" style="max-width:420px;">
@@ -476,36 +494,109 @@
 
             <!-- 대시보드 -->
             <section id="dashboard-page" class="page-section active">
-                <div class="section-header">
+                <div class="section-header dashboard-header">
                     <div>
                         <h2 id="dashboard-greeting">환영합니다!</h2>
-                        <p>진행 중인 업무를 한눈에 파악하세요.</p>
+                        <p>진행 중인 업무와 마감 일정을 한눈에 파악하세요.</p>
+                    </div>
+                    <div class="dashboard-header-actions">
+                        <button class="btn-secondary" onclick="UI.openProjectModal('create')"><i class="fas fa-folder-plus"></i> 새 프로젝트</button>
+                        <button class="btn-primary" onclick="UI.openTaskModal('create')"><i class="fas fa-plus"></i> 새 작업 추가</button>
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
-                    <div style="background: var(--bg-surface); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); transition: transform 0.2s; cursor: default;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500;">총 프로젝트</p>
-                        <h3 id="stat-total" style="font-size: 2.25rem; font-weight: 600;">0</h3>
+                <!-- 1. 상단 요약 통계 그리드 -->
+                <div class="dashboard-stats-grid">
+                    <div class="dashboard-stat-card">
+                        <div class="dashboard-stat-header">
+                            <span class="dashboard-stat-label">프로젝트 현황</span>
+                            <span class="dashboard-stat-icon" style="color: var(--accent-color);"><i class="fas fa-folder"></i></span>
+                        </div>
+                        <h3 class="dashboard-stat-val" id="stat-total">0</h3>
+                        <div class="dashboard-stat-sub">
+                            <span>진행 중 <strong id="stat-active" style="color: var(--info-color);">0</strong></span>
+                            <span class="dot-sep">•</span>
+                            <span>완료 <strong id="stat-done" style="color: var(--success-color);">0</strong></span>
+                        </div>
                     </div>
-                    <div style="background: var(--bg-surface); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); transition: transform 0.2s; cursor: default;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500;">진행 중</p>
-                        <h3 id="stat-active" style="font-size: 2.25rem; color: var(--info-color); font-weight: 600;">0</h3>
+
+                    <div class="dashboard-stat-card">
+                        <div class="dashboard-stat-header">
+                            <span class="dashboard-stat-label">작업 현황</span>
+                            <span class="dashboard-stat-icon" style="color: var(--warning-color);"><i class="fas fa-list-check"></i></span>
+                        </div>
+                        <h3 class="dashboard-stat-val" id="stat-tasks-total">0</h3>
+                        <div class="dashboard-stat-sub">
+                            <span>완료 <strong id="stat-tasks-done" style="color: var(--success-color);">0</strong></span>
+                            <span class="dot-sep">•</span>
+                            <span>대기/진행 <strong id="stat-tasks-pending" style="color: var(--warning-color);">0</strong></span>
+                        </div>
+                        <span id="stat-tasks" style="display: none;">0</span>
                     </div>
-                    <div style="background: var(--bg-surface); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); transition: transform 0.2s; cursor: default;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500;">완료된 프로젝트</p>
-                        <h3 id="stat-done" style="font-size: 2.25rem; color: var(--success-color); font-weight: 600;">0</h3>
+
+                    <div class="dashboard-stat-card">
+                        <div class="dashboard-stat-header">
+                            <span class="dashboard-stat-label">평균 프로젝트 진행률</span>
+                            <span class="dashboard-stat-icon" style="color: var(--success-color);"><i class="fas fa-chart-line"></i></span>
+                        </div>
+                        <h3 class="dashboard-stat-val" id="stat-avg-progress">0%</h3>
+                        <div class="progress-container" style="height: 6px; margin-top: 0.5rem;">
+                            <div class="progress-bar" id="stat-avg-progress-bar" style="width: 0%;"></div>
+                        </div>
                     </div>
-                    <div style="background: var(--bg-surface); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); transition: transform 0.2s; cursor: default;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500;">진행 대기 작업</p>
-                        <h3 id="stat-tasks" style="font-size: 2.25rem; color: var(--warning-color); font-weight: 600;">0</h3>
+
+                    <div class="dashboard-stat-card">
+                        <div class="dashboard-stat-header">
+                            <span class="dashboard-stat-label">주의 필요 작업</span>
+                            <span class="dashboard-stat-icon" style="color: var(--danger-color);"><i class="fas fa-bell"></i></span>
+                        </div>
+                        <h3 class="dashboard-stat-val" id="stat-alert-total" style="color: var(--danger-color);">0</h3>
+                        <div class="dashboard-stat-sub">
+                            <span>지연 <strong id="stat-overdue-count" style="color: var(--danger-color);">0</strong>건</span>
+                            <span class="dot-sep">•</span>
+                            <span>마감 임박 <strong id="stat-urgent-count" style="color: var(--warning-color);">0</strong>건</span>
+                        </div>
                     </div>
                 </div>
 
-                <h3 style="font-size: 1.1rem; margin-bottom: 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fas fa-fire" style="color: var(--danger-color);"></i> 마감 임박 작업
-                </h3>
-                <div class="dashboard-list" id="dashboard-recent-tasks"></div>
+                <!-- 2. 진행 중인 프로젝트 섹션 -->
+                <div class="dashboard-section">
+                    <div class="dashboard-section-title-row">
+                        <h3><i class="fas fa-folder-open" style="color: var(--info-color);"></i> 진행 중인 프로젝트</h3>
+                        <a href="javascript:void(0)" class="dashboard-view-all" onclick="UI.switchPage('projects')">전체보기 <i class="fas fa-chevron-right"></i></a>
+                    </div>
+                    <div id="dashboard-active-projects" class="dashboard-projects-grid"></div>
+                </div>
+
+                <!-- 3. 지연 작업 & 마감 임박 작업 2열 그리드 -->
+                <div id="dashboard-tasks-split" class="dashboard-tasks-split">
+                    <!-- 좌측: 지연된 작업 -->
+                    <div class="dashboard-split-col">
+                        <div class="dashboard-section-title-row">
+                            <h3><i class="fas fa-triangle-exclamation" style="color: var(--danger-color);"></i> 지연된 작업</h3>
+                            <span class="badge bg-danger" id="badge-overdue-count">0</span>
+                        </div>
+                        <div class="dashboard-list" id="dashboard-overdue-tasks"></div>
+                    </div>
+
+                    <!-- 우측: 마감 임박 작업 -->
+                    <div class="dashboard-split-col">
+                        <div class="dashboard-section-title-row">
+                            <h3><i class="fas fa-fire" style="color: var(--warning-color);"></i> 마감 임박 작업 (3일 이내)</h3>
+                            <span class="badge bg-warning" id="badge-urgent-count">0</span>
+                        </div>
+                        <div class="dashboard-list" id="dashboard-urgent-tasks"></div>
+                    </div>
+                </div>
+
+                <!-- 4. 최근 작업 섹션 -->
+                <div class="dashboard-section" style="margin-top: 2rem;">
+                    <div class="dashboard-section-title-row">
+                        <h3><i class="fas fa-clock-rotate-left" style="color: var(--accent-color);"></i> 최근 작업</h3>
+                        <a href="javascript:void(0)" class="dashboard-view-all" onclick="UI.switchPage('tasks')">작업 보드로 이동 <i class="fas fa-chevron-right"></i></a>
+                    </div>
+                    <div class="dashboard-list" id="dashboard-recent-tasks"></div>
+                </div>
             </section>
 
             <!-- 프로젝트 -->
@@ -517,11 +608,66 @@
                 <div class="project-grid" id="project-container"></div>
             </section>
 
+            <!-- 프로젝트 상세 페이지 -->
+            <section id="project-detail-page" class="page-section">
+                <div id="project-detail-container"></div>
+            </section>
+
             <!-- 작업 보드 -->
             <section id="tasks-page" class="page-section">
                 <div class="section-header">
                     <div><h2>작업 보드</h2><p>마우스로 카드를 끌어다 놓아 상태를 변경하세요.</p></div>
                     <button class="btn-primary" onclick="UI.openTaskModal('create')"><i class="fas fa-plus"></i> 새 작업 추가</button>
+                </div>
+                <div class="task-filter-bar" id="task-filter-bar">
+                    <div class="task-filter-item">
+                        <label for="task-filter-status" class="task-filter-label"><i class="fas fa-list-check"></i> 상태</label>
+                        <select id="task-filter-status" class="form-control task-filter-select">
+                            <option value="all">전체</option>
+                            <option value="To Do">해야 할 일</option>
+                            <option value="In Progress">진행 중</option>
+                            <option value="Done">완료됨</option>
+                        </select>
+                    </div>
+                    <div class="task-filter-item">
+                        <label for="task-filter-priority" class="task-filter-label"><i class="fas fa-flag"></i> 중요도</label>
+                        <select id="task-filter-priority" class="form-control task-filter-select">
+                            <option value="all">전체</option>
+                            <option value="High">높음</option>
+                            <option value="Medium">보통</option>
+                            <option value="Low">낮음</option>
+                        </select>
+                    </div>
+                    <div class="task-filter-item">
+                        <label for="task-filter-project" class="task-filter-label"><i class="fas fa-folder"></i> 프로젝트</label>
+                        <select id="task-filter-project" class="form-control task-filter-select">
+                            <option value="all">전체</option>
+                        </select>
+                    </div>
+                    <div class="task-filter-item">
+                        <label for="task-filter-due" class="task-filter-label"><i class="fas fa-calendar-day"></i> 마감 상태</label>
+                        <select id="task-filter-due" class="form-control task-filter-select">
+                            <option value="all">전체</option>
+                            <option value="due_soon">마감 임박</option>
+                            <option value="overdue">기한 초과</option>
+                            <option value="completed">완료</option>
+                        </select>
+                    </div>
+                    <div class="task-filter-item">
+                        <label for="task-sort" class="task-filter-label"><i class="fas fa-arrow-down-wide-short"></i> 정렬</label>
+                        <select id="task-sort" class="form-control task-filter-select">
+                            <option value="default">기본순</option>
+                            <option value="due_date">마감일순</option>
+                            <option value="priority">중요도순</option>
+                            <option value="created_at">생성일순</option>
+                            <option value="title">이름순</option>
+                        </select>
+                    </div>
+                    <div class="task-filter-actions">
+                        <button type="button" class="btn-secondary btn-filter-reset" id="btn-task-filter-reset" title="필터 초기화">
+                            <i class="fas fa-rotate-left"></i> <span>초기화</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="kanban-board">
                     <div class="kanban-column" data-status="To Do">

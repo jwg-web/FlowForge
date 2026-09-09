@@ -13,11 +13,16 @@ document.addEventListener("DOMContentLoaded", () => {
     initMobileMenu();
 
     document.getElementById("global-search").addEventListener("input", (e) => {
-        const query = e.target.value.toLowerCase();
-        document.querySelectorAll(".search-target").forEach(card => {
-            const text = Array.from(card.querySelectorAll(".search-text")).map(el => el.textContent.toLowerCase()).join(" ");
-            card.style.display = text.includes(query) ? "" : "none";
-        });
+        const activeSection = document.querySelector(".page-section.active");
+        if (activeSection && activeSection.id === "tasks-page") {
+            renderTasks();
+        } else {
+            const query = e.target.value.toLowerCase();
+            document.querySelectorAll(".search-target").forEach(card => {
+                const text = Array.from(card.querySelectorAll(".search-text")).map(el => el.textContent.toLowerCase()).join(" ");
+                card.style.display = text.includes(query) ? "" : "none";
+            });
+        }
     });
 });
 
@@ -54,7 +59,23 @@ function resetAppUI() {
     document.getElementById('stat-active').textContent = '0';
     document.getElementById('stat-done').textContent = '0';
     document.getElementById('stat-tasks').textContent = '0';
-    document.getElementById('dashboard-recent-tasks').innerHTML = '';
+    const setElemText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const setElemHtml = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
+    setElemText('stat-tasks-total', '0');
+    setElemText('stat-tasks-done', '0');
+    setElemText('stat-tasks-pending', '0');
+    setElemText('stat-avg-progress', '0%');
+    const elAvgBar = document.getElementById('stat-avg-progress-bar');
+    if (elAvgBar) elAvgBar.style.width = '0%';
+    setElemText('stat-alert-total', '0');
+    setElemText('stat-overdue-count', '0');
+    setElemText('stat-urgent-count', '0');
+    setElemText('badge-overdue-count', '0');
+    setElemText('badge-urgent-count', '0');
+    setElemHtml('dashboard-active-projects', '');
+    setElemHtml('dashboard-overdue-tasks', '');
+    setElemHtml('dashboard-urgent-tasks', '');
+    setElemHtml('dashboard-recent-tasks', '');
     document.getElementById('project-container').innerHTML = '';
     document.getElementById('col-todo').innerHTML = '';
     document.getElementById('col-inprogress').innerHTML = '';
@@ -64,6 +85,16 @@ function resetAppUI() {
             
     document.getElementById('header-nickname').textContent = '로딩중...';
     document.getElementById('header-avatar-initial').textContent = 'U';
+    
+    if (typeof resetTaskFilters === 'function') resetTaskFilters();
+    const projFilterSelect = document.getElementById('task-filter-project');
+    if (projFilterSelect) projFilterSelect.innerHTML = '<option value="all">전체</option>';
+    if (typeof currentProjectId !== 'undefined') currentProjectId = null;
+    if (typeof currentDetailTaskId !== 'undefined') currentDetailTaskId = null;
+    const detailModal = document.getElementById('task-detail-modal');
+    if (detailModal) detailModal.classList.remove('show');
+    const detailContainer = document.getElementById('project-detail-container');
+    if (detailContainer) detailContainer.innerHTML = '';
     
     sessionStorage.removeItem("flowforge_current_page");
     UI.switchPage('dashboard');
@@ -102,6 +133,18 @@ async function loadAppData() {
         renderTasks();
         renderDashboard();
         renderAnalytics();
+        if (typeof currentProjectId !== 'undefined' && currentProjectId) {
+            renderProjectDetail(currentProjectId);
+        }
+        if (typeof currentDetailTaskId !== 'undefined' && currentDetailTaskId) {
+            const updatedTask = currentTasks.find(t => t.id === currentDetailTaskId);
+            if (updatedTask && typeof renderTaskDetailContent === 'function') {
+                renderTaskDetailContent(updatedTask);
+            } else if (!updatedTask) {
+                currentDetailTaskId = null;
+                UI.closeModal('task-detail-modal');
+            }
+        }
     } catch (e) {UI.showToast(e.message, "error"); }
     finally {UI.setGlobalLoading(false); }
 }

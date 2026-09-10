@@ -697,17 +697,95 @@
             <!-- 통계 리포트 -->
             <section id="analytics-page" class="page-section">
                 <div class="section-header">
-                    <div><h2>통계 리포트</h2><p>내 프로젝트 및 작업의 현황을 시각적으로 확인하세요.</p></div>
+                    <div><h2>통계 리포트</h2><p>내 프로젝트 및 작업의 진행 상황과 분포를 한눈에 분석하세요.</p></div>
                 </div>
+
+                <!-- 1. 상단 KPI 요약 영역 -->
+                <div class="analytics-kpi-grid">
+                    <div class="analytics-kpi-card">
+                        <div class="dashboard-stat-header">
+                            <span class="dashboard-stat-label">전체 프로젝트</span>
+                            <span class="dashboard-stat-icon" style="color: var(--accent-color);"><i class="fas fa-folder"></i></span>
+                        </div>
+                        <h3 class="dashboard-stat-val" id="analytics-stat-projects">0</h3>
+                        <div class="dashboard-stat-sub"><span>등록된 프로젝트</span></div>
+                    </div>
+
+                    <div class="analytics-kpi-card">
+                        <div class="dashboard-stat-header">
+                            <span class="dashboard-stat-label">평균 프로젝트 진행률</span>
+                            <span class="dashboard-stat-icon" style="color: var(--info-color);"><i class="fas fa-chart-line"></i></span>
+                        </div>
+                        <h3 class="dashboard-stat-val" id="analytics-stat-avg-progress">0%</h3>
+                        <div class="dashboard-stat-sub"><span>전체 프로젝트 평균</span></div>
+                    </div>
+
+                    <div class="analytics-kpi-card">
+                        <div class="dashboard-stat-header">
+                            <span class="dashboard-stat-label">전체 작업</span>
+                            <span class="dashboard-stat-icon" style="color: var(--warning-color);"><i class="fas fa-list-check"></i></span>
+                        </div>
+                        <h3 class="dashboard-stat-val" id="analytics-stat-tasks">0</h3>
+                        <div class="dashboard-stat-sub"><span>등록된 세부 업무</span></div>
+                    </div>
+
+                    <div class="analytics-kpi-card">
+                        <div class="dashboard-stat-header">
+                            <span class="dashboard-stat-label">작업 완료율</span>
+                            <span class="dashboard-stat-icon" style="color: var(--success-color);"><i class="fas fa-circle-check"></i></span>
+                        </div>
+                        <h3 class="dashboard-stat-val" id="analytics-stat-completion-rate">0%</h3>
+                        <div class="dashboard-stat-sub"><span id="analytics-stat-completion-sub">0 / 0 완료</span></div>
+                    </div>
+
+                    <div class="analytics-kpi-card">
+                        <div class="dashboard-stat-header">
+                            <span class="dashboard-stat-label">지연 작업</span>
+                            <span class="dashboard-stat-icon" style="color: var(--danger-color);"><i class="fas fa-triangle-exclamation"></i></span>
+                        </div>
+                        <h3 class="dashboard-stat-val" id="analytics-stat-overdue" style="color: var(--danger-color);">0</h3>
+                        <div class="dashboard-stat-sub"><span>기한 초과 미완료</span></div>
+                    </div>
+                </div>
+
+                <!-- 2. 중단 2열 그리드: 작업 상태 분포 & 작업 중요도 분포 -->
                 <div class="analytics-grid">
                     <div class="analytics-card">
-                        <h3><i class="fas fa-folder-open" style="color: var(--accent-color); margin-right: 0.5rem;"></i> 프로젝트 진행 현황</h3>
-                        <div id="analytics-projects-content"></div>
-                    </div>
-                    <div class="analytics-card">
-                        <h3><i class="fas fa-tasks" style="color: var(--info-color); margin-right: 0.5rem;"></i> 작업(Task) 상태 분포</h3>
+                        <div class="dashboard-section-title-row">
+                            <h3><i class="fas fa-chart-pie" style="color: var(--accent-color); margin-right: 0.5rem;"></i> 작업 상태 분포</h3>
+                        </div>
                         <div id="analytics-tasks-content"></div>
                     </div>
+                    <div class="analytics-card">
+                        <div class="dashboard-section-title-row">
+                            <h3><i class="fas fa-flag" style="color: var(--warning-color); margin-right: 0.5rem;"></i> 작업 중요도 분포</h3>
+                        </div>
+                        <div id="analytics-priority-content"></div>
+                    </div>
+                </div>
+
+                <!-- 3. 하단 2열 그리드: 마감 상태 분석 & 전체 작업 종합 요약 -->
+                <div class="analytics-grid" style="margin-top: 1.5rem;">
+                    <div class="analytics-card">
+                        <div class="dashboard-section-title-row">
+                            <h3><i class="fas fa-calendar-check" style="color: var(--success-color); margin-right: 0.5rem;"></i> 마감 상태 분석</h3>
+                        </div>
+                        <div id="analytics-due-content"></div>
+                    </div>
+                    <div class="analytics-card">
+                        <div class="dashboard-section-title-row">
+                            <h3><i class="fas fa-chart-simple" style="color: var(--info-color); margin-right: 0.5rem;"></i> 전체 작업 종합 요약</h3>
+                        </div>
+                        <div id="analytics-summary-content"></div>
+                    </div>
+                </div>
+
+                <!-- 4. 최하단 전체 너비: 프로젝트별 작업 완료율 -->
+                <div class="analytics-card" style="margin-top: 1.5rem;">
+                    <div class="dashboard-section-title-row">
+                        <h3><i class="fas fa-diagram-project" style="color: var(--accent-color); margin-right: 0.5rem;"></i> 프로젝트별 작업 완료율</h3>
+                    </div>
+                    <div id="analytics-project-tasks-content"></div>
                 </div>
             </section>
             <footer style="text-align: center; padding: 2rem 1rem; border-top: 1px solid var(--border-color, #ddd); color: var(--text-secondary, #888); font-size: 0.9rem; margin-top: 2rem;">

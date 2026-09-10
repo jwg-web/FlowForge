@@ -2,6 +2,8 @@
 
 let currentProjects = [];
 let currentTasks = [];
+let currentChecklists = [];
+let currentDependencies = [];
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -56,6 +58,8 @@ function initMobileMenu() {
 function resetAppUI() {
     currentProjects = [];
     currentTasks = [];
+    currentChecklists = [];
+    currentDependencies = [];
     document.getElementById('stat-total').textContent = '0';
     document.getElementById('stat-active').textContent = '0';
     document.getElementById('stat-done').textContent = '0';
@@ -106,6 +110,7 @@ function resetAppUI() {
     const detailContainer = document.getElementById('project-detail-container');
     if (detailContainer) detailContainer.innerHTML = '';
     if (typeof resetCalendarUI === 'function') resetCalendarUI();
+    if (typeof setMobileKanbanPage === 'function') setMobileKanbanPage(0);
     
     sessionStorage.removeItem("flowforge_current_page");
     UI.switchPage('dashboard');
@@ -125,9 +130,11 @@ async function loadAppData() {
     if (!user) return;
     UI.setGlobalLoading(true);
     try {
-        const [pRes, tRes] = await Promise.all([
+        const [pRes, tRes, cRes, dRes] = await Promise.all([
             AppAPI.getProjects(user.user_id),
-            AppAPI.getTasks(user.user_id)
+            AppAPI.getTasks(user.user_id),
+            AppAPI.getChecklists(user.user_id),
+            AppAPI.getDependencies(user.user_id)
         ]);
 
         if (!pRes.success) {
@@ -139,6 +146,19 @@ async function loadAppData() {
         }
         currentProjects = pRes.projects;
         currentTasks = tRes.tasks;
+        const rawChecklists = (cRes && cRes.success && Array.isArray(cRes.checklists)) ? cRes.checklists : [];
+        const seenChecklistIds = new Set();
+        currentChecklists = [];
+        for (let i = rawChecklists.length - 1; i >= 0; i--) {
+            const item = rawChecklists[i];
+            const id = String(item.id || '').trim();
+            if (!id || seenChecklistIds.has(id)) continue;
+            seenChecklistIds.add(id);
+            currentChecklists.push(item);
+        }
+        currentChecklists.reverse();
+
+        currentDependencies = (dRes && dRes.success && Array.isArray(dRes.dependencies)) ? dRes.dependencies : [];
 
         renderProjects();
         renderTasks();
@@ -162,3 +182,27 @@ async function loadAppData() {
     } catch (e) {UI.showToast(e.message, "error"); }
     finally {UI.setGlobalLoading(false); }
 }
+
+function getTaskChecklist(taskId) {
+    const items = (currentChecklists || []).filter(item => item.task_id === taskId);
+    const unique = [];
+    const seen = new Set();
+    for (const item of items) {
+        const id = String(item.id || '').trim();
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        unique.push(item);
+    }
+    return unique;
+}
+
+function getTaskChecklistStats(taskId) {
+    const items = getTaskChecklist(taskId);
+    const total = items.length;
+    const completed = items.filter(item => Boolean(item.is_completed)).length;
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, completed, percent };
+}
+
+window.getTaskChecklist = getTaskChecklist;
+window.getTaskChecklistStats = getTaskChecklistStats;
